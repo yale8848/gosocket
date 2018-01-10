@@ -3,6 +3,7 @@ package gosocket
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"os"
 )
@@ -98,6 +99,9 @@ func (server *Server) readRoutine(session *Session) {
 		n, error := session.Connect.Conn.Read(buff)
 		if error != nil {
 			fmt.Println(error)
+			if error == io.EOF {
+				continue
+			}
 			if e, ok := error.(net.Error); ok && e.Timeout() {
 				server.Handler.ReadTimeout(error)
 			}
