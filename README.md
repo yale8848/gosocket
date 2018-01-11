@@ -15,7 +15,7 @@ package main
 
 import (
 	"fmt"
-	"gosocket"
+	"github.com/yale8848/gosocket"
 )
 
 type ServerHandlerImp struct {
@@ -68,7 +68,7 @@ package main
 
 import (
 	"fmt"
-	"gosocket"
+	"github.com/yale8848/gosocket"
 	"net"
 	"time"
 )
