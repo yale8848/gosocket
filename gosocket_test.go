@@ -1,14 +1,53 @@
-// Create by Yale 2018/1/11 17:57
-package main
+package gosocket
 
 import (
 	"fmt"
-	"gosocket"
+	"github.com/yale8848/gosocket"
 	"net"
+	"testing"
 	"time"
 )
 
-func main() {
+type ServerHandlerImp struct {
+}
+
+func (s *ServerHandlerImp) Connect(session *gosocket.Session) {
+
+	fmt.Println("Connect : ")
+
+}
+func (s *ServerHandlerImp) HandleData(session *gosocket.Session, protocol *gosocket.Protocol) {
+
+	if protocol.IsHeartBeat() {
+		fmt.Println("ReadData : IsHeartBeat")
+		d := protocol.Encode(nil)
+		session.WriteData(d)
+	} else {
+		fmt.Println("ReadData :" + protocol.String())
+		d := protocol.Encode(protocol.GetData())
+		session.WriteData(d)
+	}
+
+}
+func (s *ServerHandlerImp) Close(session *gosocket.Session) {
+
+	fmt.Println("Close : ")
+}
+func (s *ServerHandlerImp) AcceptError(err error) {
+
+	fmt.Println("AcceptError : " + err.Error())
+}
+
+func (s *ServerHandlerImp) ReadTimeout(err error) {
+	fmt.Println("ReadTimeout : " + err.Error())
+}
+
+func TestNewServer(t *testing.T) {
+	server := gosocket.NewServer(&ServerHandlerImp{}, &gosocket.Protocol{})
+	server.Start(&gosocket.Config{
+		Network: "tcp", Address: ":7777", NetworkListen: "tcp", ReadTimeout: 20})
+}
+func TestClient(t *testing.T) {
 	hawkServer, err := net.ResolveTCPAddr("tcp4", "127.0.0.1:7777")
 	if err != nil {
 		fmt.Println(err)
@@ -32,7 +71,6 @@ func main() {
 	go receive(connection, protocol, sig)
 	<-sig
 	connection.Close()
-
 }
 
 func heartBeat(con *net.TCPConn) {
