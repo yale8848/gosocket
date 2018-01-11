@@ -105,6 +105,7 @@ func (server *Server) readRoutine(session *Session) {
 			if e, ok := error.(net.Error); ok && e.Timeout() {
 				server.Handler.ReadTimeout(error)
 			}
+			session.Connect.Conn.Close()
 			server.Handler.Close(session)
 			session.writeChannel <- nil
 			session.handleChannel <- nil

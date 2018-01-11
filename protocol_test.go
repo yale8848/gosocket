@@ -11,8 +11,8 @@ func TestProtocol_Decode(t *testing.T) {
 	p := &Protocol{}
 	e := p.Encode([]byte("aaa"))
 	d := p.Decode(e)
-	if d && p.Success {
-		fmt.Println(string(p.Data))
+	if d && p.success {
+		fmt.Println(p.String())
 	}
 
 }

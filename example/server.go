@@ -42,6 +42,6 @@ func (s *ServerHandlerImp) ReadTimeout(err error) {
 func main() {
 	server := gosocket.NewServer(&ServerHandlerImp{}, &gosocket.Protocol{})
 	server.Start(&gosocket.Config{
-		Network: "tcp", Address: ":7777", NetworkListen: "tcp", ReadTimeout: 10})
+		Network: "tcp", Address: ":7777", NetworkListen: "tcp", ReadTimeout: 20})
 
 }

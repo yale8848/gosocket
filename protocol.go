@@ -158,6 +158,7 @@ func (dp *Protocol) Decode(byteData []byte) bool {
 					if len == 0 {
 						init()
 						dp.data = nil
+						dp.success = true
 						return true
 					}
 					dp.dataLen = len
