@@ -3,6 +3,10 @@ Simple Golang socket skeleton
 
 ## Useage
 
+```go
+go get github.com/yale8848/gosocket
+```
+
 - server
 
 ```go
