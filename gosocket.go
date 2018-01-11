@@ -6,19 +6,18 @@ import (
 	"io"
 	"net"
 	"os"
+	"time"
 )
 
 type Session struct {
 	Connect       *ServerConnect
-	ID            int64
-	Ext           interface{}
-	writeChannel  chan *[]byte
-	handleChannel chan *[]byte
+	writeChannel  chan []byte
+	handleChannel chan []byte
 }
 
 type ServerHandler interface {
 	Connect(*Session)
-	ReadData(*Session, *[]byte, int) bool
+	HandleData(*Session, *Protocol)
 
 	Close(*Session)
 	AcceptError(error)
@@ -29,7 +28,9 @@ type ServerConnect struct {
 	net.Conn
 }
 type Server struct {
-	Handler ServerHandler
+	Handler  ServerHandler
+	protocol *Protocol
+	config   *Config
 }
 
 type Config struct {
@@ -42,33 +43,32 @@ type Config struct {
 	HandleChannelSize int
 }
 
-func (session *Session) WriteData(bytes *[]byte) {
+func (session *Session) WriteData(bytes []byte) {
 	session.writeChannel <- bytes
 }
-func (session *Session) HandleData(bytes *[]byte) {
-	session.handleChannel <- bytes
-}
+
 func checkError(err error) {
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
 	}
 }
-func NewServer(handler ServerHandler) *Server {
-	return &Server{Handler: handler}
+func NewServer(handler ServerHandler, protocol *Protocol) *Server {
+	return &Server{Handler: handler, protocol: protocol}
 }
-func defaultConfig(config *Config) {
-
+func (server *Server) defaultConfig(config *Config) {
+	server.config = config
 	if config.ReadTimeout == 0 {
-		config.ReadTimeout = 20000
+		config.ReadTimeout = 20
 	}
 	if config.WriteTimeout == 0 {
-		config.WriteTimeout = 20000
+		config.WriteTimeout = 20
 	}
+
 }
 func (server *Server) Start(config *Config) {
 
-	defaultConfig(config)
+	server.defaultConfig(config)
 
 	tcpAdd, error := net.ResolveTCPAddr(config.Network, config.Address)
 	checkError(error)
@@ -83,8 +83,8 @@ func (server *Server) Start(config *Config) {
 			fmt.Println(config.Address + ":" + error.Error())
 			continue
 		}
-		session := &Session{Connect: &ServerConnect{Conn: conn}, writeChannel: make(chan *[]byte, config.WriteChannelSize),
-			handleChannel: make(chan *[]byte, config.HandleChannelSize)}
+		session := &Session{Connect: &ServerConnect{Conn: conn}, writeChannel: make(chan []byte, config.WriteChannelSize),
+			handleChannel: make(chan []byte, config.HandleChannelSize)}
 		server.Handler.Connect(session)
 
 		go server.readRoutine(session)
@@ -110,10 +110,12 @@ func (server *Server) readRoutine(session *Session) {
 			session.handleChannel <- nil
 			return
 		}
-		finish := server.Handler.ReadData(session, &buff, n)
-		if finish {
 
-		}
+		session.Connect.Conn.SetReadDeadline(time.Now().Add(time.Duration(server.config.ReadTimeout) * time.Second))
+
+		hb := make([]byte, n)
+		copy(hb, buff)
+		session.handleChannel <- hb
 
 	}
 }
@@ -122,10 +124,17 @@ func (server *Server) handleRoutine(session *Session) {
 		select {
 		case bytes := <-session.handleChannel:
 			if bytes == nil {
-				fmt.Println("handleConnect stop")
+				fmt.Println("handleRoutine stop")
 				return
 			}
-			session.WriteData(bytes)
+
+			ptcl := server.protocol
+			finish := ptcl.Decode(bytes)
+
+			if finish && ptcl.success {
+
+				server.Handler.HandleData(session, server.protocol)
+			}
 		}
 	}
 }
@@ -135,10 +144,10 @@ func (server *Server) writeRoutine(session *Session) {
 		select {
 		case bytes := <-session.writeChannel:
 			if bytes == nil {
-				fmt.Println("writeConnect stop")
+				fmt.Println("writeRoutine stop")
 				return
 			}
-			session.Connect.Conn.Write(*bytes)
+			session.Connect.Conn.Write(bytes)
 		}
 	}
 
