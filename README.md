@@ -1,5 +1,6 @@
-#gosocket
-Simple Golang socket skeleton
+# gosocket
+
+Simple Golang socket long connection skeleton
 
 ## Useage
 
