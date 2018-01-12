@@ -91,7 +91,7 @@ func main() {
 		Version: 1,
 		Reserve: 0,
 	}
-	connection.Write(protocol.Encode([]byte("hellowd123456789012458888888465454488889448")))
+	connection.Write(protocol.Encode([]byte("Hello World")))
 
 	sig := make(chan bool)
 	go heartBeat(connection)
