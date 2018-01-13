@@ -1,6 +1,6 @@
 # gosocket
 
-Simple Golang socket long connection skeleton
+Simple Golang server socket long connection skeleton
 
 ## Useage
 
